@@ -1,14 +1,16 @@
 # CareCube 🏥
 
-CareCube is a modern, full-stack healthcare management application built to seamlessly facilitate operations between System Administrators, Hospitals, and NGOs. 
+CareCube is a modern, full-stack healthcare logistics and resource management platform built to seamlessly facilitate operations between System Administrators, Hospitals, and NGOs. It serves as a real-time command center for critical medical resources during emergencies.
 
 ## 🚀 Key Features
 
-- **Dynamic Resource Management**: Full CRUD operations for Hospitals and Resource Requests.
-- **Smart Resource Logic**: Automatic status classification (`Critical`, `Moderate`, `Stable`) based on real-time metrics such as hospital oxygen levels.
-- **Role-Based Security**: Robust authentication system that strictly limits the "System Administrator" portal to predefined users, while allowing open registration for participating Hospitals and NGOs.
-- **Profile Customization**: Users can easily update their organizational details and independently manage their passwords.
-- **Intuitive UI**: Built with a custom React Context theme provider, offering a visually stunning, reactive, and responsive interface.
+- **Real-Time Resource Network**: Connects hospitals and NGOs to provide live visibility into critical medical resources across the region.
+- **Dynamic Hospital Dashboards**: Hospitals get a real-time command center to process incoming resource requests and monitor operational status.
+- **Closed-Loop Logistics Engine**: Automates the logistics workflow. When a hospital approves an incoming request from an NGO, the system automatically deducts the necessary resources (ICU Beds, Ventilators, Oxygen, Blood Units) from inventory and logs an immutable allocation dispatch record.
+- **Dedicated Inventory Management**: A streamlined workspace for hospitals to quickly update and sync their current resource capacities with the live database.
+- **Automated Resource Alerts**: Smart resource logic that automatically triggers system-wide visual alerts (`Critical`, `Moderate`, `Stable`) when supply metrics (like oxygen levels) drop below safety thresholds.
+- **Role-Based Workflows**: Separate, secure environments for System Administrators, Hospitals, and NGOs, complete with dynamic approval flows for new user registrations.
+- **Interactive UI/UX**: Built with a custom React Context theme provider, offering a visually stunning, responsive interface with micro-animations and intuitive progress bars.
 
 ## 💻 Tech Stack
 
@@ -23,10 +25,10 @@ You will need to run both the frontend and backend servers concurrently.
 
 ### 1. Backend Setup
 ```bash
-cd backend
+cd CareCube/backend
 npm install
 ```
-Create a `.env` file in the `/backend` directory and add your MongoDB connection string:
+Create a `.env` file in the `CareCube/backend` directory and add your MongoDB connection string:
 ```env
 MONGO_URI=your_mongodb_connection_string
 PORT=5000
@@ -46,6 +48,6 @@ npm run dev
 The application will be running locally (usually at `http://localhost:5173`).
 
 ## 🔒 Default Admin Credentials
-To access the System Administrator portal, you can log in using the predefined testing credentials:
+To access the System Administrator portal to verify hospitals, you can log in using the predefined testing credentials:
 - **Email:** `admin1@carecube.com`
 - **Password:** `12345`
