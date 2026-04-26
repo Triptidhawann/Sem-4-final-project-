@@ -9,6 +9,9 @@ const hospitalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    state: {
+        type: String
+    },
     beds: {
         type: Number
     },

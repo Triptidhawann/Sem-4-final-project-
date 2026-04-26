@@ -26,6 +26,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['admin', 'hospital', 'ngo'],
         default: 'hospital'
+    },
+    city: {
+        type: String,
+        default: ''
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'active', 'suspended'],
+        default: 'pending'
     }
 }, { timestamps: true });
 

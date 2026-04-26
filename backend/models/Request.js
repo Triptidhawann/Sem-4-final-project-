@@ -20,7 +20,14 @@ const requestSchema = new mongoose.Schema({
     },
     priority: {
         type: String,
-        enum: ["Low", "Medium", "High", "Critical"]
+        enum: ["Low", "Medium", "High", "Critical"],
+        required: true
+    },
+    requestedBy: {
+        type: String
+    },
+    userEmail: {
+        type: String
     }
 }, { timestamps: true });
 
