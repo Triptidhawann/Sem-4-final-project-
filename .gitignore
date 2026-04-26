@@ -8,8 +8,9 @@ lerna-debug.log*
 
 # Dependencies
 node_modules/
-backend/node_modules/
+**/node_modules/
 CareCube/carecube/node_modules/
+CareCube/backend/node_modules/
 
 # Production Build
 dist/
@@ -23,6 +24,7 @@ CareCube/carecube/dist/
 .env.test.local
 .env.production.local
 backend/.env
+CareCube/backend/.env
 
 # OS & Editor
 .DS_Store
