@@ -46,8 +46,3 @@ npm install
 npm run dev
 ```
 The application will be running locally (usually at `http://localhost:5173`).
-
-## 🔒 Default Admin Credentials
-To access the System Administrator portal to verify hospitals, you can log in using the predefined testing credentials:
-- **Email:** `admin1@carecube.com`
-- **Password:** `12345`
