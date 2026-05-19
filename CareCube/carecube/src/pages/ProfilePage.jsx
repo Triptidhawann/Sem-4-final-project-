@@ -23,7 +23,7 @@ export default function ProfilePage({ user, setUser }) {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/profile/${user.email}`);
+      const res = await fetch(`https://carecube-backend.onrender.com/api/auth/profile/${user.email}`);
       const data = await res.json();
       if (res.ok) {
         setProfile({
@@ -46,7 +46,7 @@ export default function ProfilePage({ user, setUser }) {
     setSaving(true);
     setMessage({ type: "", text: "" });
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/profile/${id}`, {
+      const res = await fetch(`https://carecube-backend.onrender.com/api/auth/profile/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profile)
@@ -79,7 +79,7 @@ export default function ProfilePage({ user, setUser }) {
     setPassSaving(true);
     setPassMessage({ type: "", text: "" });
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/profile/${id}/password`, {
+      const res = await fetch(`https://carecube-backend.onrender.com/api/auth/profile/${id}/password`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

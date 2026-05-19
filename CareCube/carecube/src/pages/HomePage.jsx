@@ -17,8 +17,8 @@ export default function HomePage({ setPage }) {
     const fetchData = async () => {
       try {
         const [dashRes, alertRes] = await Promise.all([
-           fetch("http://localhost:5000/api/dashboard"),
-           fetch("http://localhost:5000/api/alerts")
+           fetch("https://carecube-backend.onrender.com/api/dashboard"),
+           fetch("https://carecube-backend.onrender.com/api/alerts")
         ]);
         const dashData = await dashRes.json();
         const alertData = await alertRes.json();

@@ -19,7 +19,7 @@ export default function UsersPage({ user }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/users");
+      const res = await fetch("https://carecube-backend.onrender.com/api/users");
       const data = await res.json();
       setUsers(data);
     } catch (err) {
@@ -36,7 +36,7 @@ export default function UsersPage({ user }) {
 
   const handleEditSave = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/users/${id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),
@@ -51,7 +51,7 @@ export default function UsersPage({ user }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await fetch(`http://localhost:5000/api/users/${id}`, { method: "DELETE" });
+      await fetch(`https://carecube-backend.onrender.com/api/users/${id}`, { method: "DELETE" });
       fetchUsers();
     } catch (err) {
       console.error(err);

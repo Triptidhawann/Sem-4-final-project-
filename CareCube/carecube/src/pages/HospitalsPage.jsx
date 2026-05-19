@@ -125,7 +125,7 @@ export default function HospitalsPage() {
 
   const fetchHospitals = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/hospitals");
+      const res = await fetch("https://carecube-backend.onrender.com/api/hospitals");
       const data = await res.json();
       setHospitals(data);
     } catch (error) {
@@ -138,7 +138,7 @@ export default function HospitalsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this hospital?")) return;
     try {
-      await fetch(`http://localhost:5000/api/hospitals/${id}`, { method: "DELETE" });
+      await fetch(`https://carecube-backend.onrender.com/api/hospitals/${id}`, { method: "DELETE" });
       fetchHospitals();
     } catch (err) {
       console.error(err);
@@ -152,7 +152,7 @@ export default function HospitalsPage() {
 
   const handleEditSave = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/hospitals/${id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/hospitals/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),
@@ -166,7 +166,7 @@ export default function HospitalsPage() {
 
   const handleAddSave = async () => {
     try {
-      await fetch("http://localhost:5000/api/hospitals", {
+      await fetch("https://carecube-backend.onrender.com/api/hospitals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(addData),
@@ -182,7 +182,7 @@ export default function HospitalsPage() {
   const handleAllocateSubmit = async () => {
     if (!allocationData.resourceType || !allocationData.quantity || !allocationData.toHospital || !allocationData.priority) return;
     try {
-      await fetch("http://localhost:5000/api/allocations", {
+      await fetch("https://carecube-backend.onrender.com/api/allocations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -204,7 +204,7 @@ export default function HospitalsPage() {
 
   const fetchHistory = async (h) => {
     try {
-      const res = await fetch("http://localhost:5000/api/allocations");
+      const res = await fetch("https://carecube-backend.onrender.com/api/allocations");
       const data = await res.json();
       setHistoryData(data.filter(a => a.fromHospital === h.name || a.toHospital === h.name));
       setHistoryHospital(h);

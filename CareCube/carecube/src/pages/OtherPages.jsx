@@ -25,10 +25,10 @@ export function AllocationsPage({ user }) {
 
   const fetchAllocations = async () => {
     try {
-      let url = "http://localhost:5000/api/allocations";
+      let url = "https://carecube-backend.onrender.com/api/allocations";
       
       if (user?.role !== "admin") {
-         const resHosp = await fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`);
+         const resHosp = await fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`);
          const hospData = await resHosp.json();
          const myHospital = hospData.find(d => d.name === user.name) || hospData[0];
          
@@ -56,7 +56,7 @@ export function AllocationsPage({ user }) {
     
     const newStatus = statuses[currentIndex + 1];
     try {
-      await fetch(`http://localhost:5000/api/allocations/${id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/allocations/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ allocationStatus: newStatus }),
@@ -168,7 +168,7 @@ export function RequestsPage({ user }) {
 
   const fetchHospitals = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/hospitals");
+      const res = await fetch("https://carecube-backend.onrender.com/api/hospitals");
       const data = await res.json();
       setHospitalsList(data);
       
@@ -184,7 +184,7 @@ export function RequestsPage({ user }) {
   const fetchRequests = async () => {
     try {
       if (user?.role === "admin") {
-         const res = await fetch(`http://localhost:5000/api/requests`);
+         const res = await fetch(`https://carecube-backend.onrender.com/api/requests`);
          const allReqs = await res.json();
          setIncomingReqs(allReqs.filter(r => r.requestStatus === "Pending"));
          setOutgoingReqs(allReqs.filter(r => r.requestStatus !== "Pending"));
@@ -196,7 +196,7 @@ export function RequestsPage({ user }) {
       if (user?.role === "ngo") {
          hospitalId = user?.id || user?._id;
          if (!hospitalId) return;
-         const resOut = await fetch(`http://localhost:5000/api/requests?fromHospitalId=${hospitalId}`);
+         const resOut = await fetch(`https://carecube-backend.onrender.com/api/requests?fromHospitalId=${hospitalId}`);
          setIncomingReqs([]);
          setOutgoingReqs(await resOut.json());
       } else {
@@ -204,8 +204,8 @@ export function RequestsPage({ user }) {
          hospitalId = myHosp._id;
 
          const [resIn, resOut] = await Promise.all([
-             fetch(`http://localhost:5000/api/requests?toHospitalId=${hospitalId}&requestStatus=Pending`),
-             fetch(`http://localhost:5000/api/requests?fromHospitalId=${hospitalId}`)
+             fetch(`https://carecube-backend.onrender.com/api/requests?toHospitalId=${hospitalId}&requestStatus=Pending`),
+             fetch(`https://carecube-backend.onrender.com/api/requests?fromHospitalId=${hospitalId}`)
          ]);
 
          setIncomingReqs(await resIn.json());
@@ -220,7 +220,7 @@ export function RequestsPage({ user }) {
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      await fetch(`http://localhost:5000/api/requests/${id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestStatus: newStatus }),
@@ -234,7 +234,7 @@ export function RequestsPage({ user }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this request?")) return;
     try {
-      await fetch(`http://localhost:5000/api/requests/${id}`, { method: "DELETE" });
+      await fetch(`https://carecube-backend.onrender.com/api/requests/${id}`, { method: "DELETE" });
       fetchRequests();
     } catch (err) {
       console.error(err);
@@ -274,7 +274,7 @@ export function RequestsPage({ user }) {
           submittedAt: new Date()
       };
 
-      const res = await fetch("http://localhost:5000/api/requests", {
+      const res = await fetch("https://carecube-backend.onrender.com/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -437,10 +437,10 @@ export function TrackingPage({ user }) {
 
   const fetchTracking = async () => {
     try {
-      let url = "http://localhost:5000/api/tracking";
+      let url = "https://carecube-backend.onrender.com/api/tracking";
       
       if (user?.role !== "admin") {
-         const resHosp = await fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`);
+         const resHosp = await fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`);
          const hospData = await resHosp.json();
          const myHospital = hospData.find(d => d.name === user.name) || hospData[0];
          

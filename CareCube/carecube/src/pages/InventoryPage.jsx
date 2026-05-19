@@ -16,8 +16,8 @@ export default function InventoryPage({ user }) {
   const fetchData = async () => {
     try {
       const [hospRes, allocRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`),
-        fetch(`http://localhost:5000/api/allocations`)
+        fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`),
+        fetch(`https://carecube-backend.onrender.com/api/allocations`)
       ]);
       const hospData = await hospRes.json();
       if (hospData.length > 0) {
@@ -42,7 +42,7 @@ export default function InventoryPage({ user }) {
   const handleUpdate = async () => {
     if (!h) return;
     try {
-      await fetch(`http://localhost:5000/api/hospitals/${h._id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/hospitals/${h._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),

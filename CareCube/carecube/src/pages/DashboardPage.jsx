@@ -46,8 +46,8 @@ function AdminDashboard({ setPage }) {
     const fetchData = async () => {
       try {
         const [dashRes, trackRes] = await Promise.all([
-           fetch("http://localhost:5000/api/dashboard"),
-           fetch("http://localhost:5000/api/tracking")
+           fetch("https://carecube-backend.onrender.com/api/dashboard"),
+           fetch("https://carecube-backend.onrender.com/api/tracking")
         ]);
         const dashData = await dashRes.json();
         const trackData = await trackRes.json();
@@ -165,7 +165,7 @@ function HospitalDashboard({ setPage, user }) {
   const fetchDashboardData = async () => {
     try {
       // 1. Fetch Hospital
-      const hospRes = await fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`);
+      const hospRes = await fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`);
       const hospData = await hospRes.json();
       
       let myHospital = null;
@@ -179,9 +179,9 @@ function HospitalDashboard({ setPage, user }) {
       if (!hospitalId) return;
 
       const [incReqRes, myReqRes, allocRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/requests?toHospitalId=${hospitalId}&requestStatus=Pending`),
-        fetch(`http://localhost:5000/api/requests?fromHospitalId=${hospitalId}`),
-        fetch(`http://localhost:5000/api/allocations?hospitalId=${hospitalId}`)
+        fetch(`https://carecube-backend.onrender.com/api/requests?toHospitalId=${hospitalId}&requestStatus=Pending`),
+        fetch(`https://carecube-backend.onrender.com/api/requests?fromHospitalId=${hospitalId}`),
+        fetch(`https://carecube-backend.onrender.com/api/allocations?hospitalId=${hospitalId}`)
       ]);
 
       setIncomingReqs(await incReqRes.json());
@@ -199,7 +199,7 @@ function HospitalDashboard({ setPage, user }) {
 
   const handleReqStatus = async (id, requestStatus) => {
     try {
-      await fetch(`http://localhost:5000/api/requests/${id}`, {
+      await fetch(`https://carecube-backend.onrender.com/api/requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestStatus })
@@ -354,7 +354,7 @@ function NGODashboard({ setPage }) {
         if (stateF && stateF !== "all") query.append("state", stateF);
         if (statusF && statusF !== "all") query.append("status", statusF);
         
-        const res = await fetch(`http://localhost:5000/api/hospitals?${query.toString()}`);
+        const res = await fetch(`https://carecube-backend.onrender.com/api/hospitals?${query.toString()}`);
         const data = await res.json();
         setHospitals(data);
       } catch (err) {
