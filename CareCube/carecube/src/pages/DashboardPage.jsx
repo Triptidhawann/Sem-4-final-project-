@@ -4,8 +4,9 @@ import { Ic } from "../components/icons";
 import { StatCard, DonutChart, Sparkline, ResourceBar } from "../components/ui/Charts";
 import Badge from "../components/ui/Badge";
 import PageShell from "../components/PageShell";
-import { HOSPITALS, ALLOCATIONS, REQUESTS } from "../data/mockData";
+
 import LoginPage from "./LoginPage";
+import { exportToPDF, exportToCSV } from "../utils/exportUtils";
 
 // ─── Role router ──────────────────────────────────────────────────────────────
 export default function DashboardPage({ user, setPage, setUser }) {
@@ -35,7 +36,7 @@ function AdminDashboard({ setPage }) {
   const thd = useThd();
 
   const [stats, setStats] = useState({
-     totalHospitals: 0, criticalRequests: 0, inTransit: 0, deliveredToday: 0,
+     criticalHospitals: 0, totalAlerts: 0, activeShortages: 0, inTransit: 0,
      averages: { avgBeds: 0, avgVents: 0, avgOx: 0, avgBlood: 0 },
      hospitals: []
   });
@@ -65,10 +66,10 @@ function AdminDashboard({ setPage }) {
     <PageShell title="Command Centre" sub="System-wide resource visibility — 22 Feb 2026">
       {/* Stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 18, marginBottom: 24 }}>
-        <StatCard label="Hospitals Connected" value={stats.totalHospitals} sub="Active network"   icon={Ic.hospital(20)}                      delay="s1"/>
-        <StatCard label="Critical Requests"   value={stats.criticalRequests}  sub="Action required"  icon={Ic.bell(20)}     color={T.danger}      delay="s2"/>
-        <StatCard label="In Transit"          value={stats.inTransit} sub="Units en route"    icon={Ic.truck(20)}    color={T.warning}     delay="s3"/>
-        <StatCard label="Delivered Today"     value={stats.deliveredToday}  sub="Recent deliveries"  icon={Ic.check(20)}   color={T.success}     delay="s4"/>
+        <StatCard label="Critical Hospitals"  value={stats.criticalHospitals} sub="Require immediate action"  icon={Ic.hospital(20)} color={T.danger}     delay="s1"/>
+        <StatCard label="Total Alerts"        value={stats.totalAlerts}       sub="Active network warnings"   icon={Ic.bell(20)}     color={T.warning}    delay="s2"/>
+        <StatCard label="Active Shortages"    value={stats.activeShortages}   sub="Unresolved shortages"      icon={Ic.box(20)}      color={T.danger}     delay="s3"/>
+        <StatCard label="In Transit"          value={stats.inTransit}         sub="Units en route"            icon={Ic.truck(20)}    color={T.teal}       delay="s4"/>
       </div>
 
       {/* Table + charts row */}
@@ -127,9 +128,9 @@ function AdminDashboard({ setPage }) {
               <tr><td colSpan="7" style={{ padding: "13px 16px", textAlign: "center", color: T.muted }}>No allocations active.</td></tr>
             ) : allocations.map((a) => (
               <tr key={a._id || a.id} className="t-row" style={{ borderBottom: `1px solid ${T.border}` }}>
-                <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 500, color: T.text }}>{a.fromHospital}</td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: T.muted }}>{a.toHospital}</td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: T.text }}>{a.resourceType}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 500, color: T.text }}>{a.fromHospitalName}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: T.muted }}>{a.toHospitalName}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: T.text }}>{a.resource}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 600, color: T.text }}>{a.quantity}</td>
                 <td style={{ padding: "13px 16px" }}><Badge type={a.priority || "High"}/></td>
                 <td style={{ padding: "13px 16px" }}><Badge type={a.status}/></td>
@@ -163,24 +164,31 @@ function HospitalDashboard({ setPage, user }) {
 
   const fetchDashboardData = async () => {
     try {
-      const [hospRes, incReqRes, myReqRes, allocRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`),
-        fetch(`http://localhost:5000/api/requests?hospital=${encodeURIComponent(user.name)}`),
-        fetch(`http://localhost:5000/api/requests?userEmail=${encodeURIComponent(user.email)}`),
-        fetch(`http://localhost:5000/api/allocations`)
-      ]);
-      
+      // 1. Fetch Hospital
+      const hospRes = await fetch(`http://localhost:5000/api/hospitals?search=${encodeURIComponent(user.name)}`);
       const hospData = await hospRes.json();
+      
+      let myHospital = null;
       if (hospData.length > 0) {
-        const myHospital = hospData.find(d => d.name === user.name) || hospData[0];
+        myHospital = hospData.find(d => d.name === user.name) || hospData[0];
         setH(myHospital);
       }
+
+      // 2. Use real hospital ID or fallback to user ID
+      const hospitalId = myHospital ? myHospital._id : (user?.id || user?._id);
+      if (!hospitalId) return;
+
+      const [incReqRes, myReqRes, allocRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/requests?toHospitalId=${hospitalId}&requestStatus=Pending`),
+        fetch(`http://localhost:5000/api/requests?fromHospitalId=${hospitalId}`),
+        fetch(`http://localhost:5000/api/allocations?hospitalId=${hospitalId}`)
+      ]);
 
       setIncomingReqs(await incReqRes.json());
       setMyReqs(await myReqRes.json());
       
       const allAllocs = await allocRes.json();
-      setActivities(allAllocs.filter(a => a.fromHospital === user.name).slice(0, 5));
+      setActivities(allAllocs.filter(a => a.fromHospitalId === hospitalId || a.toHospitalId === hospitalId).slice(0, 5));
 
     } catch (err) {
       console.error(err);
@@ -189,12 +197,12 @@ function HospitalDashboard({ setPage, user }) {
     }
   };
 
-  const handleReqStatus = async (id, status) => {
+  const handleReqStatus = async (id, requestStatus) => {
     try {
       await fetch(`http://localhost:5000/api/requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ requestStatus })
       });
       fetchDashboardData();
     } catch (err) {
@@ -204,7 +212,7 @@ function HospitalDashboard({ setPage, user }) {
 
   const hasEnoughInventory = (r) => {
     if (!h) return false;
-    const rt = r.resourceType?.toLowerCase() || "";
+    const rt = r.resource?.toLowerCase() || "";
     const qty = Number(r.quantity) || 0;
     if (rt.includes("bed")) return (h.beds || 0) >= qty;
     if (rt.includes("vent")) return (h.ventilators || 0) >= qty;
@@ -232,7 +240,21 @@ function HospitalDashboard({ setPage, user }) {
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
         {/* Inventory bars */}
         <div className="s3" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 24, boxShadow: T.shadow, transition: "background .3s" }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: T.text, marginBottom: 20 }}>Inventory Status</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Inventory Status</h3>
+            <button onClick={() => {
+              const columns = ["Resource", "Capacity/Max", "Current", "Percentage"];
+              const data = [
+                ["ICU Beds", "500", h.beds, `${Math.round((h.beds/500)*100)}%`],
+                ["Ventilators", "150", h.ventilators, `${Math.round((h.ventilators/150)*100)}%`],
+                ["Oxygen %", "100", h.oxygen, `${h.oxygen}%`],
+                ["Blood Units", "300", h.bloodUnits, `${Math.round((h.bloodUnits/300)*100)}%`]
+              ];
+              exportToCSV("inventory-report", columns, data);
+            }} style={{ background: "none", color: T.teal, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              Download Report
+            </button>
+          </div>
           <ResourceBar label="ICU Beds"         used={h.beds}   total={500}/>
           <ResourceBar label="Ventilators"      used={h.ventilators}  total={150} color={T.warning}/>
           <ResourceBar label="Oxygen %"         used={h.oxygen} total={100}/>
@@ -247,11 +269,11 @@ function HospitalDashboard({ setPage, user }) {
           ) : incomingReqs.map((r) => (
             <div key={r._id} style={{ padding: "14px", border: `1px solid ${T.border}`, borderRadius: 10, marginBottom: 12, transition: "border-color .2s" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{r.resourceType}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{r.resource}</span>
                 <Badge type={r.priority}/>
               </div>
-              <p style={{ fontSize: 12, color: T.muted, marginBottom: 10 }}>From: {r.requestedBy || "NGO/Citizen"} · {r.quantity} units · {new Date(r.createdAt).toLocaleDateString()}</p>
-              {r.status === "Pending" ? (
+              <p style={{ fontSize: 12, color: T.muted, marginBottom: 10 }}>From: {r.fromHospitalName} · {r.quantity} units · {new Date(r.createdAt).toLocaleDateString()}</p>
+              {r.requestStatus === "Pending" ? (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button 
                     onClick={() => handleReqStatus(r._id, 'Approved')} 
@@ -264,7 +286,7 @@ function HospitalDashboard({ setPage, user }) {
                   </button>
                   <button onClick={() => handleReqStatus(r._id, 'Declined')} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 7, color: T.muted, padding: "7px 12px", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans'" }}>Decline</button>
                 </div>
-              ) : <Badge type={r.status}/>}
+              ) : <Badge type={r.requestStatus}/>}
             </div>
           ))}
         </div>
@@ -279,10 +301,10 @@ function HospitalDashboard({ setPage, user }) {
           ) : myReqs.map((r) => (
             <div key={r._id} style={{ padding: "14px", border: `1px solid ${T.border}`, borderRadius: 10, marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{r.resourceType}</span>
-                <Badge type={r.status}/>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{r.resource}</span>
+                <Badge type={r.requestStatus}/>
               </div>
-              <p style={{ fontSize: 12, color: T.muted, marginBottom: 0 }}>To: {r.hospital} · {r.quantity} units · {new Date(r.createdAt).toLocaleDateString()}</p>
+              <p style={{ fontSize: 12, color: T.muted, marginBottom: 0 }}>To: {r.toHospitalName} · {r.quantity} units · {new Date(r.createdAt).toLocaleDateString()}</p>
             </div>
           ))}
         </div>
@@ -299,7 +321,7 @@ function HospitalDashboard({ setPage, user }) {
               </div>
               <div>
                 <p style={{ fontSize: 13, color: T.text, margin: "0 0 4px 0", lineHeight: 1.4 }}>
-                  Allocated <b>{a.quantity} {a.resourceType}</b> to {a.toHospital}
+                  {a.fromHospitalId === (user?.id || user?._id) ? "Allocated" : "Received"} <b>{a.quantity} {a.resource}</b> {a.fromHospitalId === (user?.id || user?._id) ? "to" : "from"} {a.fromHospitalId === (user?.id || user?._id) ? a.toHospitalName : a.fromHospitalName}
                 </p>
                 <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>{new Date(a.createdAt).toLocaleString()}</p>
               </div>
@@ -322,14 +344,6 @@ function NGODashboard({ setPage }) {
   const [search, setSearch]   = useState("");
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // Request Form State
-  const [reqResource, setReqResource] = useState("");
-  const [reqQty, setReqQty] = useState("");
-  const [reqLocation, setReqLocation] = useState("");
-  const [reqPriority, setReqPriority] = useState("");
-  const [reqSuccess, setReqSuccess] = useState("");
-  const locationInputRef = useRef(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -356,37 +370,6 @@ function NGODashboard({ setPage }) {
     return () => clearTimeout(delayFn);
   }, [search, stateF, statusF]);
 
-  const handleSubmitRequest = async () => {
-    if (!reqResource || !reqQty || !reqLocation || !reqPriority) return;
-    try {
-      await fetch("http://localhost:5000/api/requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resourceType: reqResource,
-          quantity: reqQty,
-          hospital: reqLocation,
-          priority: reqPriority
-        }),
-      });
-      setReqSuccess("Request sent successfully!");
-      setReqResource("");
-      setReqQty("");
-      setReqLocation("");
-      setReqPriority("");
-      setTimeout(() => setReqSuccess(""), 3000);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleRequestClick = (hospitalName) => {
-    setReqLocation(hospitalName);
-    if (locationInputRef.current) {
-      locationInputRef.current.focus();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
 
   const btnStyle = (active) => ({
     textAlign: "left", background: active ? T.tealLt : "none",
@@ -401,51 +384,6 @@ function NGODashboard({ setPage }) {
 
   return (
     <PageShell title="Resource Search" sub="Find and request medical resources from connected institutions">
-      {/* Horizontal request form at top */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 22px", marginBottom: 24, boxShadow: T.shadow, transition: "background .3s" }}>
-        <h4 style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 12 }}>Submit Quick Request</h4>
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
-          <div style={{ flex: 1.2 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: T.muted, display: "block", marginBottom: 5 }}>Resource Type</label>
-            <input className="field" style={{ fontSize: 13, width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bgSub, color: T.text, outline: "none" }} type="text" placeholder="Ventilators…" value={reqResource} onChange={e => setReqResource(e.target.value)} />
-          </div>
-          <div style={{ flex: 0.8 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: T.muted, display: "block", marginBottom: 5 }}>Quantity</label>
-            <input className="field" style={{ fontSize: 13, width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bgSub, color: T.text, outline: "none" }} type="number" placeholder="Units…" value={reqQty} onChange={e => setReqQty(e.target.value)} />
-          </div>
-          <div style={{ flex: 1.2 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: T.muted, display: "block", marginBottom: 5 }}>Location</label>
-            <input className="field" ref={locationInputRef} style={{ fontSize: 13, width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bgSub, color: T.text, outline: "none" }} type="text" placeholder="Hospital name…" value={reqLocation} onChange={e => setReqLocation(e.target.value)} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: T.muted, display: "block", marginBottom: 5 }}>Urgency</label>
-            <select className="field" style={{ fontSize: 13, width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bgSub, color: reqPriority ? T.text : T.muted, outline: "none", cursor: "pointer" }} value={reqPriority} onChange={e => setReqPriority(e.target.value)}>
-              <option value="" disabled hidden>Select urgency</option>
-              <option value="Critical" style={{color: T.text}}>Emergency</option>
-              <option value="High" style={{color: T.text}}>Urgent</option>
-              <option value="Medium" style={{color: T.text}}>Normal</option>
-              <option value="Low" style={{color: T.text}}>Low</option>
-            </select>
-          </div>
-          <button onClick={handleSubmitRequest} className="btn-primary" style={{ height: 38, padding: "0 20px", background: T.teal, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans'" }}>
-            Submit
-          </button>
-        </div>
-        {reqPriority && !reqSuccess && (
-          <div style={{ marginTop: 12, fontSize: 12, color: T.muted, fontStyle: "italic", paddingLeft: 4 }}>
-            {reqPriority === "Critical" && <span style={{color: T.danger}}>Emergency → For life-threatening situations</span>}
-            {reqPriority === "High" && <span style={{color: T.warning}}>Urgent → Needed within hours</span>}
-            {reqPriority === "Medium" && <span style={{color: T.teal}}>Normal → Routine requirement</span>}
-            {reqPriority === "Low" && <span>Low → Non-urgent stock refill</span>}
-          </div>
-        )}
-        {reqSuccess && (
-          <div style={{ marginTop: 12, padding: "8px", background: T.success + "22", color: T.success, borderRadius: 6, fontSize: 13, textAlign: "center", fontWeight: 600 }}>
-            {reqSuccess}
-          </div>
-        )}
-      </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 24 }}>
         {/* Filter sidebar */}
         <div className="s2">
@@ -544,9 +482,6 @@ function NGODashboard({ setPage }) {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => handleRequestClick(h.name)} className="btn-ghost" style={{ width: "100%", background: "none", border: `1px solid ${T.border}`, borderRadius: 8, color: T.teal, padding: "8px", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans'" }}>
-                  Request Resource
-                </button>
               </div>
             ))}
           </div>

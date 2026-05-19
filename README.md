@@ -1,53 +1,130 @@
-# CareCube 🏥
+<div align="center">
+  <h1>🏥 CareCube</h1>
+  <p><strong>Next-Generation Hospital Logistics & Resource Management Platform</strong></p>
+</div>
 
-CareCube is a modern, full-stack healthcare logistics and resource management platform built to seamlessly facilitate operations between System Administrators, Hospitals, and NGOs. It serves as a real-time command center for critical medical resources during emergencies.
+---
 
-## 🚀 Key Features
+## 📖 Overview
 
-- **Real-Time Resource Network**: Connects hospitals and NGOs to provide live visibility into critical medical resources across the region.
-- **Dynamic Hospital Dashboards**: Hospitals get a real-time command center to process incoming resource requests and monitor operational status.
-- **Closed-Loop Logistics Engine**: Automates the logistics workflow. When a hospital approves an incoming request from an NGO, the system automatically deducts the necessary resources (ICU Beds, Ventilators, Oxygen, Blood Units) from inventory and logs an immutable allocation dispatch record.
-- **Dedicated Inventory Management**: A streamlined workspace for hospitals to quickly update and sync their current resource capacities with the live database.
-- **Automated Resource Alerts**: Smart resource logic that automatically triggers system-wide visual alerts (`Critical`, `Moderate`, `Stable`) when supply metrics (like oxygen levels) drop below safety thresholds.
-- **Role-Based Workflows**: Separate, secure environments for System Administrators, Hospitals, and NGOs, complete with dynamic approval flows for new user registrations.
-- **Interactive UI/UX**: Built with a custom React Context theme provider, offering a visually stunning, responsive interface with micro-animations and intuitive progress bars.
+**CareCube** is a comprehensive, full-stack hospital resource and logistics management platform designed to solve critical resource shortages during emergencies. It bridges the gap between hospitals, NGOs, and administrators by offering real-time inventory tracking, automated inter-hospital resource allocations, and seamless end-to-end delivery tracking.
 
-## 💻 Tech Stack
+Whether managing ICU Beds, Ventilators, Oxygen Cylinders, or Blood Units, CareCube ensures that life-saving resources are always directed precisely where they are needed most.
 
-- **Frontend**: React.js (Bootstrapped with Vite)
-- **Backend**: Node.js & Express.js
-- **Database**: MongoDB (via Mongoose)
-- **Styling**: Component-level inline styling driven by a global `ThemeContext`
+---
 
-## 🛠️ Installation & Setup
+## ✨ Key Features
 
-You will need to run both the frontend and backend servers concurrently.
+- **🛡️ Role-Based Access Architecture**  
+  Custom interfaces and routing dynamically tailored for **Hospitals** (resource exchange), **NGOs** (resource requests/outreach), and **Administrators** (global network monitoring).
 
-### 1. Backend Setup
-```bash
-cd CareCube/backend
-npm install
+- **🔄 Automated Logistics Engine**  
+  Seamlessly request resources from other hospitals. Approving a request automatically deducts inventory, generates an official **Allocation** record, and launches an active **Tracking** timeline for the delivery.
+
+- **📊 Smart Dashboard & Analytics**  
+  Real-time visualization of current inventory levels, active requests, and critical shortages in a sleek, modern UI.
+
+- **⚠️ Automated Alert System**  
+  Background alert engine that instantly triggers warnings if a hospital's resource levels drop below minimum safety thresholds.
+
+- **📄 Professional Document Exports**  
+  Built-in engine to instantly export logistics tables and tracking histories into beautifully formatted **PDF reports** or raw **CSV spreadsheets** with a single click.
+
+---
+
+## 🛠️ Tech Stack
+
+CareCube is built using a modern **MERN** (MongoDB, Express, React, Node) stack tailored for speed, scalability, and developer experience.
+
+- **Frontend**: React.js (Vite), Context API for state management, CSS Modules (Custom Design System), `jspdf` & `papaparse` for exports.
+- **Backend**: Node.js, Express.js, JWT Authentication, RESTful API architecture.
+- **Database**: MongoDB (Mongoose ORM).
+- **Environment**: Managed via `.env` configuration for secure deployment.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+Before running CareCube locally, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v16.x or higher)
+- [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas cluster)
+- Git
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/carecube.git
+   cd carecube
+   ```
+
+2. **Setup the Backend**
+   ```bash
+   cd CareCube/backend
+   npm install
+   ```
+   Create a `.env` file in `CareCube/backend/` and add your database credentials:
+   ```env
+   PORT=5000
+   MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/carecube
+   JWT_SECRET=your_super_secret_jwt_key
+   ```
+   Start the backend server:
+   ```bash
+   npm run dev
+   ```
+
+3. **Setup the Frontend**
+   ```bash
+   cd ../carecube
+   npm install
+   ```
+   Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the Application**
+   Open your browser and navigate to `http://localhost:5173`. 
+   *(Note: The frontend expects the backend to be running on port 5000).*
+
+---
+
+## 📂 Project Structure
+
+```text
+CareCube/
+├── backend/               # Node.js/Express Backend Core
+│   ├── config/            # DB and Environment config
+│   ├── controllers/       # Business logic (Logistics, Tracking, Auth)
+│   ├── models/            # MongoDB Schemas (Hospital, Request, Allocation, Tracking)
+│   ├── routes/            # REST API Routes
+│   └── utils/             # Helper scripts (Alert Engine)
+│
+└── carecube/              # React.js (Vite) Frontend Core
+    ├── public/            # Static assets
+    ├── src/
+    │   ├── components/    # Reusable UI elements (Shell, Nav, Badges)
+    │   ├── context/       # React Context (Auth, Theme)
+    │   ├── pages/         # Core Views (Dashboard, Inventory, Logistics)
+    │   └── utils/         # PDF and CSV Export Engines
+    └── index.css          # Global Design System
 ```
-Create a `.env` file in the `CareCube/backend` directory and add your MongoDB connection string:
-```env
-MONGO_URI=your_mongodb_connection_string
-PORT=5000
-```
-Start the backend server:
-```bash
-npm run dev
-```
 
-### 2. Frontend Setup
-Open a new terminal window:
-```bash
-cd CareCube/carecube
-npm install
-npm run dev
-```
-The application will be running locally (usually at `http://localhost:5173`).
+---
 
-## 🔒 Default Admin Credentials
-To access the System Administrator portal to verify hospitals, you can log in using the predefined testing credentials:
-- **Email:** `admin1@carecube.com`
-- **Password:** `12345`
+## 🤝 Contribution Guidelines
+
+We welcome contributions! To contribute:
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
+
+---
+
+<div align="center">
+  <p>Built with ❤️ for a more connected healthcare ecosystem.</p>
+</div>

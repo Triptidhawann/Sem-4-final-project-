@@ -1,49 +1,38 @@
 const Hospital = require('../models/Hospital');
-const { runAlertEngine } = require('../utils/alertEngine');
 
 // Fetch all hospitals
 const getHospitals = async (req, res) => {
     try {
         const { search, state, status } = req.query;
-        let andConditions = [];
+        let query = {};
 
         if (state && state !== 'all') {
-            const regex = new RegExp(`^${state}$`, 'i');
-            andConditions.push({
-                $or: [
-                    { state: regex },
-                    { city: regex }
-                ]
-            });
+            query.state = { $regex: new RegExp(`^${state}$`, 'i') };
         }
         
         if (status && status !== 'all') {
-            andConditions.push({ status: { $regex: new RegExp(`^${status}$`, 'i') } });
+            query.status = { $regex: new RegExp(`^${status}$`, 'i') };
         }
 
         if (search) {
             const s = search.toLowerCase();
             if (s.includes('bed')) {
-                andConditions.push({ beds: { $gt: 0 } });
+                query.beds = { $gt: 0 };
             } else if (s.includes('vent')) {
-                andConditions.push({ ventilators: { $gt: 0 } });
+                query.ventilators = { $gt: 0 };
             } else if (s.includes('oxy')) {
-                andConditions.push({ oxygen: { $gt: 0 } });
+                query.oxygen = { $gt: 0 };
             } else if (s.includes('blood')) {
-                andConditions.push({ bloodUnits: { $gt: 0 } });
+                query.bloodUnits = { $gt: 0 };
             } else {
-                andConditions.push({
-                    $or: [
-                        { name: { $regex: search, $options: 'i' } },
-                        { city: { $regex: search, $options: 'i' } }
-                    ]
-                });
+                query.$or = [
+                    { name: { $regex: search, $options: 'i' } },
+                    { city: { $regex: search, $options: 'i' } }
+                ];
             }
         }
 
-        const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
-
-        const hospitals = await Hospital.find(finalQuery);
+        const hospitals = await Hospital.find(query);
         res.status(200).json(hospitals);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching hospitals', error: error.message });
@@ -55,8 +44,14 @@ const createHospital = async (req, res) => {
     try {
         const hospitalData = { ...req.body };
         
+        // Smart Status Logic
+        if (hospitalData.oxygen !== undefined) {
+            if (hospitalData.oxygen < 50) hospitalData.status = "Critical";
+            else if (hospitalData.oxygen < 75) hospitalData.status = "Moderate";
+            else hospitalData.status = "Stable";
+        }
+
         const newHospital = new Hospital(hospitalData);
-        await runAlertEngine(newHospital);
         const savedHospital = await newHospital.save();
         res.status(201).json(savedHospital);
     } catch (error) {
@@ -70,15 +65,22 @@ const updateHospital = async (req, res) => {
         const { id } = req.params;
         const updateData = { ...req.body };
         
-        const hospital = await Hospital.findById(id);
-        if (!hospital) {
-            return res.status(404).json({ message: 'Hospital not found' });
+        // Smart Status Logic
+        if (updateData.oxygen !== undefined) {
+            if (updateData.oxygen < 50) updateData.status = "Critical";
+            else if (updateData.oxygen < 75) updateData.status = "Moderate";
+            else updateData.status = "Stable";
         }
 
-        Object.assign(hospital, updateData);
-        await runAlertEngine(hospital);
-        
-        const updatedHospital = await hospital.save();
+        const updatedHospital = await Hospital.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedHospital) {
+            return res.status(404).json({ message: 'Hospital not found' });
+        }
 
         res.status(200).json(updatedHospital);
     } catch (error) {

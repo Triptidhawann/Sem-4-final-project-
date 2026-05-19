@@ -1,28 +1,21 @@
 const mongoose = require('mongoose');
 
 const trackingSchema = new mongoose.Schema({
-    fromHospitalId: {
-        type: String,
-        required: true
-    },
-    fromHospitalName: {
-        type: String,
-        required: true
-    },
-    toHospitalId: {
-        type: String,
-        required: true
-    },
-    toHospitalName: {
-        type: String,
-        required: true
-    },
-    resource: {
+    resourceType: {
         type: String,
         required: true
     },
     quantity: {
         type: Number,
+        required: true
+    },
+    fromHospital: {
+        type: String,
+        required: true,
+        default: 'Central Reserve'
+    },
+    toHospital: {
+        type: String,
         required: true
     },
     status: {
@@ -37,10 +30,6 @@ const trackingSchema = new mongoose.Schema({
     requestRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Request'
-    },
-    allocationRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Allocation'
     }
 }, { timestamps: true });
 

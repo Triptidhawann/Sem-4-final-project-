@@ -2,20 +2,15 @@ const Request = require('../models/Request');
 const Hospital = require('../models/Hospital');
 const Tracking = require('../models/Tracking');
 const Allocation = require('../models/Allocation');
-const { runAlertEngine } = require('../utils/alertEngine');
 
-// Fetch all requests based on filters
+// Fetch all requests
 const getRequests = async (req, res) => {
     try {
-        const { toHospitalId, fromHospitalId, requestStatus } = req.query;
+        const { userEmail, hospital, requestedBy } = req.query;
         let query = {};
-        
-        if (requestStatus) query.requestStatus = requestStatus;
-        if (toHospitalId) query.toHospitalId = toHospitalId;
-        if (fromHospitalId) query.fromHospitalId = fromHospitalId;
-        
-        // Auto-purge old legacy data that lacks the correct schema
-        await Request.deleteMany({ fromHospitalName: { $exists: false } });
+        if (userEmail) query.userEmail = { $regex: new RegExp(`^${userEmail.trim()}$`, 'i') };
+        if (hospital) query.hospital = { $regex: new RegExp(`^${hospital.trim()}$`, 'i') };
+        if (requestedBy) query.requestedBy = { $regex: new RegExp(`^${requestedBy.trim()}$`, 'i') };
         
         const requests = await Request.find(query).sort({ createdAt: -1 });
         res.status(200).json(requests);
@@ -35,75 +30,72 @@ const createRequest = async (req, res) => {
     }
 };
 
-// Update request status (Approve/Decline)
+// Update request status
 const updateRequestStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { requestStatus } = req.body;
+        const { status } = req.body;
         
-        const updateData = { requestStatus };
-        if (requestStatus === 'Approved') {
-            updateData.approvedAt = new Date();
-        }
-
         const updatedRequest = await Request.findByIdAndUpdate(
             id,
-            updateData,
-            { new: true }
+            { status },
+            { new: true } // returns the updated document
         );
 
         if (!updatedRequest) {
             return res.status(404).json({ message: 'Request not found' });
         }
 
-        if (requestStatus === 'Approved') {
-            const hospital = await Hospital.findById(updatedRequest.toHospitalId);
+        // Sync Request Approval with Hospital Data
+        if (status === 'Approved') {
+            const hospital = await Hospital.findOne({ name: updatedRequest.hospital });
             if (hospital) {
-                const rt = updatedRequest.resource.toLowerCase();
+                const rt = updatedRequest.resourceType.toLowerCase();
                 const qty = Number(updatedRequest.quantity) || 0;
                 
-                // Deduct inventory from the toHospital (the one providing the resource)
+                // Deduct inventory since the hospital is providing it
                 if (rt.includes('bed')) hospital.beds = Math.max(0, (hospital.beds || 0) - qty);
                 else if (rt.includes('vent')) hospital.ventilators = Math.max(0, (hospital.ventilators || 0) - qty);
                 else if (rt.includes('oxy')) hospital.oxygen = Math.max(0, (hospital.oxygen || 0) - qty);
                 else if (rt.includes('blood')) hospital.bloodUnits = Math.max(0, (hospital.bloodUnits || 0) - qty);
                 
-                await runAlertEngine(hospital);
+                // Smart Status Logic Update for Oxygen
+                if (rt.includes('oxy') && hospital.oxygen !== undefined) {
+                    if (hospital.oxygen < 50) hospital.status = "Critical";
+                    else if (hospital.oxygen < 75) hospital.status = "Moderate";
+                    else hospital.status = "Stable";
+                }
+
                 await hospital.save();
             }
 
-            // Create Allocation
-            const newAllocation = new Allocation({
-                fromHospitalId: updatedRequest.toHospitalId, // The one providing is the "from" in logistics
-                fromHospitalName: updatedRequest.toHospitalName,
-                toHospitalId: updatedRequest.fromHospitalId, // The requester is the "to" in logistics
-                toHospitalName: updatedRequest.fromHospitalName,
-                resource: updatedRequest.resource,
-                quantity: updatedRequest.quantity,
-                priority: updatedRequest.priority,
-                allocationStatus: "Processing"
-            });
-            const savedAllocation = await newAllocation.save();
-
-            // Create Tracking
+            // Create a Tracking Entry (legacy)
             const newTracking = new Tracking({
-                fromHospitalId: updatedRequest.toHospitalId,
-                fromHospitalName: updatedRequest.toHospitalName,
-                toHospitalId: updatedRequest.fromHospitalId,
-                toHospitalName: updatedRequest.fromHospitalName,
-                resource: updatedRequest.resource,
+                resourceType: updatedRequest.resourceType,
                 quantity: updatedRequest.quantity,
-                priority: updatedRequest.priority,
+                fromHospital: updatedRequest.hospital,
+                toHospital: updatedRequest.requestedBy || "Requester",
                 status: "Processing",
-                requestRef: updatedRequest._id,
-                allocationRef: savedAllocation._id
+                priority: updatedRequest.priority || "Medium",
+                requestRef: updatedRequest._id
             });
             await newTracking.save();
+
+            // Create an Allocation Entry (new system)
+            const newAllocation = new Allocation({
+                resourceType: updatedRequest.resourceType,
+                quantity: updatedRequest.quantity,
+                fromHospital: updatedRequest.hospital,
+                toHospital: updatedRequest.requestedBy || "Requester",
+                status: "Processing",
+                priority: updatedRequest.priority || "Medium"
+            });
+            await newAllocation.save();
         }
 
         res.status(200).json(updatedRequest);
     } catch (error) {
-        res.status(400).json({ message: 'Error updating request status', error: error.message });
+        res.status(400).json({ message: 'Error updating request', error: error.message });
     }
 };
 

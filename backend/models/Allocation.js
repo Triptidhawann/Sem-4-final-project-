@@ -1,23 +1,15 @@
 const mongoose = require('mongoose');
 
 const allocationSchema = new mongoose.Schema({
-    fromHospitalId: {
+    fromHospital: {
         type: String,
         required: true
     },
-    fromHospitalName: {
+    toHospital: {
         type: String,
         required: true
     },
-    toHospitalId: {
-        type: String,
-        required: true
-    },
-    toHospitalName: {
-        type: String,
-        required: true
-    },
-    resource: {
+    resourceType: {
         type: String,
         required: true
     },
@@ -30,7 +22,7 @@ const allocationSchema = new mongoose.Schema({
         enum: ["Low", "Medium", "High", "Critical"],
         default: "Medium"
     },
-    allocationStatus: {
+    status: {
         type: String,
         enum: ["Processing", "In Transit", "Delivered"],
         default: "Processing"

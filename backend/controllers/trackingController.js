@@ -3,22 +3,7 @@ const Tracking = require('../models/Tracking');
 // Fetch all tracking data
 const getTracking = async (req, res) => {
     try {
-        const { hospitalId } = req.query;
-        let query = {};
-        
-        if (hospitalId) {
-            query = {
-                $or: [
-                    { fromHospitalId: hospitalId },
-                    { toHospitalId: hospitalId }
-                ]
-            };
-        }
-        
-        // Auto-purge old legacy data that lacks the correct schema
-        await Tracking.deleteMany({ fromHospitalName: { $exists: false } });
-        
-        const trackingData = await Tracking.find(query).sort({ createdAt: -1 });
+        const trackingData = await Tracking.find().sort({ createdAt: -1 });
         res.status(200).json(trackingData);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tracking data', error: error.message });

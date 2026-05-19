@@ -6,7 +6,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import HospitalsPage from "./pages/HospitalsPage";
-import { AllocationsPage, RequestsPage, TrackingPage, AlertsPage } from "./pages/OtherPages";
+import { AllocationsPage, RequestsPage, TrackingPage } from "./pages/OtherPages";
 import UsersPage from "./pages/UsersPage";
 import ProfilePage from "./pages/ProfilePage";
 import InventoryPage from "./pages/InventoryPage";
@@ -73,11 +73,11 @@ function AppInner() {
       case "login":       return <LoginPage setUser={setUser} setPage={setPage}/>;
       case "dashboard":   return guard(<DashboardPage user={user} setPage={setPage} setUser={setUser}/>);
       case "profile":     return guard(<ProfilePage user={user} setUser={setUser}/>);
-      case "hospitals":   return <HospitalsPage/>;
-      case "allocations": return <AllocationsPage/>;
+      case "hospitals":   return guard(<HospitalsPage/>);
+      case "allocations": return guard(<AllocationsPage user={user}/>);
       case "requests":    return guard(<RequestsPage user={user}/>);
       case "tracking":    return <TrackingPage user={user}/>;
-      case "alerts":      return <AlertsPage/>;
+
       // Role-specific aliases
       case "inventory":   return guard(<InventoryPage user={user} />);
       case "search":      return guard(<DashboardPage user={user} setPage={setPage} setUser={setUser}/>);

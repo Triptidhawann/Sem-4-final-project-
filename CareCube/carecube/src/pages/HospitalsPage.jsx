@@ -4,6 +4,7 @@ import { Ic } from "../components/icons";
 import Badge from "../components/ui/Badge";
 import { ResourceBar } from "../components/ui/Charts";
 import PageShell from "../components/PageShell";
+import { exportToPDF, exportToCSV } from "../utils/exportUtils";
 
 // ─── Hospital card ─────────────────────────────────────────────────────────────
 function HospitalCard({ h, delay, isEditing, editData, setEditData, onEditStart, onEditSave, onEditCancel, onDelete, onAllocate, onViewHistory }) {
@@ -212,6 +213,40 @@ export default function HospitalsPage() {
     }
   };
 
+  const getExportData = () => {
+    const columns = ["Hospital Name", "City", "ICU Beds", "Ventilators", "Oxygen %", "Blood Units", "Last Updated"];
+    const data = hospitals.map(h => [
+      h.name,
+      h.city,
+      h.beds,
+      h.ventilators,
+      h.oxygen,
+      h.bloodUnits,
+      new Date(h.updatedAt || h.createdAt).toLocaleDateString()
+    ]);
+    return { columns, data };
+  };
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPDF = () => {
+    setExporting(true);
+    setTimeout(() => {
+      const { columns, data } = getExportData();
+      exportToPDF("Hospitals Network Report", "hospitals-report", columns, data);
+      setExporting(false);
+    }, 500);
+  };
+
+  const handleExportCSV = () => {
+    setExporting(true);
+    setTimeout(() => {
+      const { columns, data } = getExportData();
+      exportToCSV("hospitals-report", columns, data);
+      setExporting(false);
+    }, 500);
+  };
+
   return (
     <PageShell
       title="Hospital Directory"
@@ -228,9 +263,17 @@ export default function HospitalsPage() {
                 <strong style={{ color: T.text }}>{hospitals.length}</strong> hospital{hospitals.length !== 1 ? "s" : ""} found
               </span>
             </div>
-            <button onClick={() => setIsAdding(true)} className="btn-primary" style={{ background: T.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", display: "flex", alignItems: "center", gap: 6, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans'" }}>
-              {Ic.plus(16)} Add Hospital
-            </button>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={handleExportCSV} disabled={exporting || hospitals.length === 0} style={{ background: T.bgSub, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: exporting || hospitals.length === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: exporting ? 0.7 : 1 }}>
+                {exporting ? "Generating..." : "Export CSV"}
+              </button>
+              <button onClick={handleExportPDF} disabled={exporting || hospitals.length === 0} className="btn-primary" style={{ background: T.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: exporting || hospitals.length === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: exporting ? 0.7 : 1 }}>
+                {exporting ? "Generating..." : "Export PDF"}
+              </button>
+              <button onClick={() => setIsAdding(true)} className="btn-primary" style={{ background: T.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", display: "flex", alignItems: "center", gap: 6, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans'" }}>
+                {Ic.plus(16)} Add Hospital
+              </button>
+            </div>
           </div>
 
           {/* Loading or Hospital grid or empty */}

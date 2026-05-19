@@ -12,8 +12,8 @@ export default function Nav({ user, page, setPage, setUser }) {
       ? ["dashboard", "hospitals", "allocations", "requests", "tracking", "users"]
       : user.role === "hospital"
       ? ["dashboard", "inventory", "requests", "allocations", "tracking"]
-      : ["dashboard", "requests", "tracking", "alerts"]
-    : ["home", "hospitals", "alerts"];
+      : ["dashboard", "requests", "tracking"]
+    : ["home"];
 
   return (
     <nav style={{
@@ -62,22 +62,24 @@ export default function Nav({ user, page, setPage, setUser }) {
 
         {user ? (
           <>
-            {/* Bell */}
-            <button
-              onClick={() => setPage("alerts")}
-              style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", transition: "color .2s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = T.teal)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = T.muted)}
-            >
-              {Ic.bell(20)}
-              <span style={{
-                position: "absolute", top: -3, right: -3,
-                width: 16, height: 16, borderRadius: "50%",
-                background: T.danger, color: "#fff",
-                fontSize: 9, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>3</span>
-            </button>
+            {/* Bell (Hidden for NGO as per requirements) */}
+            {user.role !== "ngo" && (
+              <button
+                onClick={() => setPage("alerts")}
+                style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", transition: "color .2s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = T.teal)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = T.muted)}
+              >
+                {Ic.bell(20)}
+                <span style={{
+                  position: "absolute", top: -3, right: -3,
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: T.danger, color: "#fff",
+                  fontSize: 9, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>3</span>
+              </button>
+            )}
 
             {/* User dropdown menu */}
             <div style={{ position: "relative" }}>

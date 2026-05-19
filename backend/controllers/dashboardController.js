@@ -1,14 +1,15 @@
 const Hospital = require('../models/Hospital');
 const Request = require('../models/Request');
 const Tracking = require('../models/Tracking');
-const Alert = require('../models/Alert');
 
 const getDashboardStats = async (req, res) => {
     try {
-        const criticalHospitals = await Hospital.countDocuments({ status: 'Critical' });
-        const totalAlerts = await Alert.countDocuments({ isResolved: false });
-        const activeShortages = await Alert.countDocuments({ isResolved: false, severity: { $in: ['Critical', 'High'] } });
+        const totalHospitals = await Hospital.countDocuments();
+        const criticalRequests = await Request.countDocuments({ priority: { $regex: /critical/i } });
         const inTransit = await Tracking.countDocuments({ status: 'In Transit' });
+        
+        // Let's just use all delivered allocations to simulate "Allocations Made"
+        const deliveredToday = await Tracking.countDocuments({ status: 'Delivered' });
 
         const hospitalStats = await Hospital.aggregate([
             {
@@ -28,10 +29,10 @@ const getDashboardStats = async (req, res) => {
         const hospitals = await Hospital.find().sort({ createdAt: -1 });
 
         res.status(200).json({
-            criticalHospitals,
-            totalAlerts,
-            activeShortages,
+            totalHospitals,
+            criticalRequests,
             inTransit,
+            deliveredToday,
             averages,
             hospitals
         });

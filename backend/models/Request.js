@@ -1,23 +1,11 @@
 const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
-    fromHospitalId: {
+    resourceType: {
         type: String,
         required: true
     },
-    fromHospitalName: {
-        type: String,
-        required: true
-    },
-    toHospitalId: {
-        type: String,
-        required: true
-    },
-    toHospitalName: {
-        type: String,
-        required: true
-    },
-    resource: {
+    hospital: {
         type: String,
         required: true
     },
@@ -25,7 +13,7 @@ const requestSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    requestStatus: {
+    status: {
         type: String,
         enum: ["Pending", "Approved", "Declined"],
         default: "Pending"
@@ -35,8 +23,11 @@ const requestSchema = new mongoose.Schema({
         enum: ["Low", "Medium", "High", "Critical"],
         required: true
     },
-    approvedAt: {
-        type: Date
+    requestedBy: {
+        type: String
+    },
+    userEmail: {
+        type: String
     }
 }, { timestamps: true });
 

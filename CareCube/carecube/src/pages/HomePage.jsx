@@ -7,7 +7,7 @@ export default function HomePage({ setPage }) {
 
   // Dynamic Stats State
   const [stats, setStats] = useState({
-     totalHospitals: 0, criticalRequests: 0, inTransit: 0, deliveredToday: 0,
+     criticalHospitals: 0, totalAlerts: 0, activeShortages: 0, inTransit: 0,
      averages: { avgBeds: 0, avgVents: 0, avgOx: 0, avgBlood: 0 },
      hospitals: []
   });
@@ -90,14 +90,7 @@ export default function HomePage({ setPage }) {
               }}>
                 View Dashboard
               </button>
-              <button onClick={() => setPage("hospitals")} className="btn-ghost" style={{
-                background: "transparent", color: T.text,
-                border: `1.5px solid ${T.border}`,
-                padding: "12px 24px", borderRadius: 9,
-                fontSize: 14, fontWeight: 500, fontFamily: "'DM Sans'", cursor: "pointer",
-              }}>
-                Browse Hospitals
-              </button>
+
             </div>
           </div>
 
@@ -161,10 +154,10 @@ export default function HomePage({ setPage }) {
           display: "grid", gridTemplateColumns: "repeat(4,1fr)",
         }}>
           {[
-            { v: stats.totalHospitals,                 l: "Hospitals Connected" },
-            { v: stats.criticalRequests,               l: "Critical Requests"  },
-            { v: stats.inTransit,                      l: "In Transit"   },
-            { v: stats.deliveredToday,                 l: "Delivered Today"      },
+            { v: stats.criticalHospitals,              l: "Critical Hospitals" },
+            { v: stats.totalAlerts,                    l: "Total Alerts"  },
+            { v: stats.activeShortages,                l: "Active Shortages"   },
+            { v: stats.inTransit,                      l: "Resources In Transit"      },
           ].map((s, i) => (
             <div key={i} style={{
               textAlign: "center", padding: "0 20px",
