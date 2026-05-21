@@ -27,7 +27,9 @@ export function AllocationsPage({ user }) {
     try {
       let url = "https://carecube-backend.onrender.com/api/allocations";
       
-      if (user?.role !== "admin") {
+      if (user?.role === "ngo") {
+         url += `?hospitalId=${user._id || user.id}`;
+      } else if (user?.role !== "admin") {
          const resHosp = await fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`);
          const hospData = await resHosp.json();
          const myHospital = hospData.find(d => d.name === user.name) || hospData[0];
@@ -128,7 +130,7 @@ export function AllocationsPage({ user }) {
                 <td style={{ padding: "14px 16px" }}><Badge type={a.allocationStatus}/></td>
                 <td style={{ padding: "14px 16px", fontSize: 12, color: T.muted }}>{new Date(a.createdAt).toLocaleDateString()}</td>
                 <td style={{ padding: "14px 16px" }}>
-                  {a.allocationStatus !== "Delivered" && (user?.id === a.fromHospitalId || user?._id === a.fromHospitalId) && (
+                  {a.allocationStatus !== "Delivered" && (user?.role === "admin" || user?.id === a.fromHospitalId || user?._id === a.fromHospitalId) && (
                     <button onClick={() => handleUpdateStatus(a._id, a.allocationStatus)} className="btn-ghost" style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, fontSize: 11, padding: "5px 10px", cursor: "pointer", fontFamily: "'DM Sans'" }}>
                       Update Status
                     </button>
@@ -439,7 +441,9 @@ export function TrackingPage({ user }) {
     try {
       let url = "https://carecube-backend.onrender.com/api/tracking";
       
-      if (user?.role !== "admin") {
+      if (user?.role === "ngo") {
+         url += `?hospitalId=${user._id || user.id}`;
+      } else if (user?.role !== "admin") {
          const resHosp = await fetch(`https://carecube-backend.onrender.com/api/hospitals?search=${encodeURIComponent(user.name)}`);
          const hospData = await resHosp.json();
          const myHospital = hospData.find(d => d.name === user.name) || hospData[0];
@@ -451,7 +455,7 @@ export function TrackingPage({ user }) {
          url += `?hospitalId=${myHospital._id}`;
       }
       
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       setTracking(data);
       if (data.length > 0) {
@@ -461,6 +465,39 @@ export function TrackingPage({ user }) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateTracking = async (id, currentStatus, allocationRef) => {
+    const statuses = ["Processing", "In Transit", "Delivered"];
+    const currentIndex = statuses.indexOf(currentStatus);
+    if (currentIndex >= statuses.length - 1) return;
+    
+    const newStatus = statuses[currentIndex + 1];
+    
+    // Optimistic UI update
+    setTracking(prev => prev.map(t => t._id === id ? { ...t, status: newStatus } : t));
+    setSel(prev => prev?._id === id ? { ...prev, status: newStatus } : prev);
+
+    try {
+      // First update the Tracking status
+      await fetch(`https://carecube-backend.onrender.com/api/tracking/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      // Also sync it upwards to the Allocation status
+      if (allocationRef) {
+        await fetch(`https://carecube-backend.onrender.com/api/allocations/${allocationRef}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ allocationStatus: newStatus }),
+        });
+      }
+      fetchTracking();
+    } catch (err) {
+      console.error(err);
+      fetchTracking(); // Revert on failure
     }
   };
 
@@ -522,7 +559,14 @@ export function TrackingPage({ user }) {
                   <h3 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 4 }}>{sel.resource}</h3>
                   <p style={{ fontSize: 13, color: T.muted }}>Tracking ID: TRK-{sel._id.substring(sel._id.length - 6).toUpperCase()} · {sel.quantity} units</p>
                 </div>
-                <Badge type={sel.status}/>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  {sel.status !== "Delivered" && (user?.role === "admin" || user?.id === sel.fromHospitalId || user?._id === sel.fromHospitalId) && (
+                    <button onClick={() => handleUpdateTracking(sel._id, sel.status, sel.allocationRef)} className="btn-primary" style={{ background: T.teal, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans'" }}>
+                      Update Status
+                    </button>
+                  )}
+                  <Badge type={sel.status}/>
+                </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 28 }}>

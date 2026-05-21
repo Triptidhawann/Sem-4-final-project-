@@ -81,17 +81,11 @@ export default function LoginPage({ setUser, setPage }) {
 
         setSuccess("Registration successful! Redirecting...");
         
-        // Auto login on successful registration
-        const userData = {
-          name: form.name,
-          email: form.email,
-          role: role || "user"
-        };
-        
+        // Let them log in to get their ID properly instead of auto-login
         setTimeout(() => {
-          setUser(userData);
-          setPage("dashboard");
-        }, 1200);
+          setSignup(false);
+          setLoading(false);
+        }, 1500);
 
       } catch (err) {
         setError("An error occurred during registration");
@@ -123,6 +117,7 @@ export default function LoginPage({ setUser, setPage }) {
         
         // Success
         const userData = {
+          _id: data._id,
           name: data.name,
           email: data.email,
           role: role || "user"
