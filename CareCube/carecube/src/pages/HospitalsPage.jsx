@@ -181,15 +181,36 @@ export default function HospitalsPage() {
 
   const handleAllocateSubmit = async () => {
     if (!allocationData.resourceType || !allocationData.quantity || !allocationData.toHospital || !allocationData.priority) return;
+    
+    // Find the toHospital ID from the hospitals list
+    const destHospital = hospitals.find(h => h.name === allocationData.toHospital);
+    if (!destHospital) {
+      alert("Destination hospital not found.");
+      return;
+    }
+    
     try {
-      await fetch("https://carecube-backend.onrender.com/api/allocations", {
+      const payload = {
+        fromHospitalId: allocatingHospital._id,
+        fromHospitalName: allocatingHospital.name,
+        toHospitalId: destHospital._id,
+        toHospitalName: destHospital.name,
+        resource: allocationData.resourceType,
+        quantity: Number(allocationData.quantity),
+        priority: allocationData.priority,
+        allocationStatus: "Processing"
+      };
+
+      const res = await fetch("https://carecube-backend.onrender.com/api/allocations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...allocationData,
-          fromHospital: allocatingHospital.name
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        throw new Error("Failed to allocate resource");
+      }
+
       setAllocationSuccess("Resource allocated successfully!");
       setTimeout(() => {
         setAllocationSuccess("");
@@ -199,6 +220,7 @@ export default function HospitalsPage() {
       }, 2000);
     } catch (err) {
       console.error(err);
+      alert("Error allocating resource");
     }
   };
 
@@ -206,7 +228,7 @@ export default function HospitalsPage() {
     try {
       const res = await fetch("https://carecube-backend.onrender.com/api/allocations");
       const data = await res.json();
-      setHistoryData(data.filter(a => a.fromHospital === h.name || a.toHospital === h.name));
+      setHistoryData(data.filter(a => a.fromHospitalName === h.name || a.toHospitalName === h.name));
       setHistoryHospital(h);
     } catch (err) {
       console.error(err);
@@ -395,12 +417,12 @@ export default function HospitalsPage() {
                 {historyData.map(a => (
                   <div key={a._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: `1px solid ${T.border}`, borderRadius: 8, background: T.bgSub }}>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{a.resourceType} ({a.quantity})</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{a.resource} ({a.quantity})</div>
                       <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>
-                        {a.fromHospital === historyHospital.name ? `To: ${a.toHospital}` : `From: ${a.fromHospital}`} • {new Date(a.createdAt).toLocaleDateString()}
+                        {a.fromHospitalName === historyHospital.name ? `To: ${a.toHospitalName}` : `From: ${a.fromHospitalName}`} • {new Date(a.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <Badge type={a.status}/>
+                    <Badge type={a.allocationStatus}/>
                   </div>
                 ))}
               </div>

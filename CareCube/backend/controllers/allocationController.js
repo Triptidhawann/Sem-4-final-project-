@@ -57,7 +57,33 @@ const updateAllocationStatus = async (req, res) => {
     }
 };
 
+// Create a new allocation manually
+const createAllocation = async (req, res) => {
+    try {
+        const { fromHospitalId, fromHospitalName, toHospitalId, toHospitalName, resource, quantity, priority, allocationStatus } = req.body;
+        
+        const newAllocation = new Allocation({
+            fromHospitalId, fromHospitalName, toHospitalId, toHospitalName, resource, quantity, priority, allocationStatus
+        });
+        const savedAllocation = await newAllocation.save();
+
+        // Automatically create a tracking entry
+        const Tracking = require('../models/Tracking');
+        const newTracking = new Tracking({
+            fromHospitalId, fromHospitalName, toHospitalId, toHospitalName, resource, quantity, priority, 
+            status: allocationStatus || 'Processing',
+            allocationRef: savedAllocation._id
+        });
+        await newTracking.save();
+
+        res.status(201).json(savedAllocation);
+    } catch (error) {
+        res.status(400).json({ message: 'Error creating allocation', error: error.message });
+    }
+};
+
 module.exports = {
     getAllocations,
-    updateAllocationStatus
+    updateAllocationStatus,
+    createAllocation
 };
